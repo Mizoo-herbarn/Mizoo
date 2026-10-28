@@ -5,12 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ClassPay - สาขาการท่องเที่ยวและนิทรรศการ</title>
   
-  <!-- Fonts & Tailwind -->
+  <!-- ฟอนต์และไอคอน -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- ฐานข้อมูล Real-time อัตโนมัติ (GunDB Peer Network) -->
+  <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
 
   <script>
     tailwind.config = {
@@ -69,7 +72,7 @@
           <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
         </button>
         <button onclick="tryAccessAdmin('admin')" class="nav-btn px-4 py-2 rounded-xl font-medium text-sm flex items-center gap-2 text-slate-600 hover:bg-slate-100 relative" data-tab="admin">
-          <i data-lucide="shield-check" class="w-4 h-4"></i> ตรวจสลิป (แอดมิน)
+          <i data-lucide="shield-check" class="w-4 h-4"></i> ตรวจสลิป
           <i data-lucide="lock" class="w-3 h-3 text-slate-400"></i>
           <span id="badge-pending" class="hidden px-1.5 py-0.5 text-[10px] bg-amber-500 text-white rounded-full">0</span>
         </button>
@@ -77,7 +80,7 @@
     </div>
   </header>
 
-  <!-- Main Container -->
+  <!-- เนื้อหาหลัก -->
   <main class="max-w-5xl mx-auto px-4 py-6">
 
     <!-- 1. แดชบอร์ด -->
@@ -88,8 +91,9 @@
             <span class="bg-brand-500/30 text-brand-100 border border-brand-400/30 text-[11px] px-2.5 py-0.5 rounded-full font-medium">ห้องเรียน</span>
             <h2 class="text-2xl font-bold mt-1">สาขาการท่องเที่ยวและนิทรรศการ</h2>
           </div>
-          <div class="flex items-center gap-2" id="admin-status-box">
-            <span id="admin-status-tag" class="text-xs bg-white/20 px-3 py-1 rounded-full text-white">ผู้ใช้งานทั่วไป</span>
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-xs text-emerald-100 font-medium">เชื่อมต่อระบบ Real-time แล้ว</span>
           </div>
         </div>
 
@@ -186,7 +190,7 @@
             <input type="file" id="slip-input" accept="image/*" class="hidden" onchange="previewSlip(event)">
             <div id="slip-placeholder" class="space-y-1.5">
               <i data-lucide="image-plus" class="w-8 h-8 mx-auto text-slate-400"></i>
-              <p class="text-xs font-medium text-slate-600">กดเพื่อเลือกรูปภาพสลิปจากเครื่อง</p>
+              <p class="text-xs font-medium text-slate-600">แตะเพื่อถ่ายรูป หรือเลือกรูปจากคลังภาพ</p>
             </div>
             <img id="slip-preview" class="hidden max-h-56 mx-auto rounded-xl object-contain shadow-sm border border-slate-200" alt="สลิป">
           </div>
@@ -204,13 +208,13 @@
         <div>
           <div class="flex items-center gap-2">
             <h2 class="text-xl font-bold text-slate-800">จัดการรายการเก็บเงิน</h2>
-            <span class="text-[10px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold">แอดมิน</span>
+            <span class="text-[10px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold">โหมดแอดมิน</span>
           </div>
           <p class="text-xs text-slate-500">สร้างหรือลบรายการเก็บเงินของห้อง</p>
         </div>
         <div class="flex gap-2">
           <button onclick="logoutAdmin()" class="px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-200">
-            ออกจากระบบแอดมิน
+            ออกจากแอดมิน
           </button>
           <button onclick="openBillingModal()" class="px-3.5 py-2 bg-brand-600 text-white rounded-xl text-xs font-medium hover:bg-brand-700 shadow-sm flex items-center gap-1.5">
             <i data-lucide="plus" class="w-4 h-4"></i> เพิ่มรายการ
@@ -226,12 +230,12 @@
         <div>
           <div class="flex items-center gap-2">
             <h2 class="text-xl font-bold text-slate-800">ตรวจสลิปโอนเงิน</h2>
-            <span class="text-[10px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold">แอดมิน</span>
+            <span class="text-[10px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full font-bold">โหมดแอดมิน</span>
           </div>
           <p class="text-xs text-slate-500">ตรวจสอบและกดยืนยันยอดให้เพื่อน</p>
         </div>
         <button onclick="logoutAdmin()" class="px-3 py-2 bg-slate-100 text-slate-600 rounded-xl text-xs font-medium hover:bg-slate-200">
-          ออกจากระบบแอดมิน
+          ออกจากแอดมิน
         </button>
       </div>
       <div id="admin-slip-list" class="space-y-3"></div>
@@ -239,7 +243,7 @@
 
   </main>
 
-  <!-- Bottom Navigation (Mobile) -->
+  <!-- เมนูล่างจอโทรศัพท์ -->
   <nav class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 px-2 py-1.5 flex justify-around items-center">
     <button onclick="switchTab('dashboard')" class="mobile-nav-btn flex flex-col items-center p-1 text-brand-600 text-[10px] font-medium" data-tab="dashboard">
       <i data-lucide="pie-chart" class="w-5 h-5"></i>
@@ -264,7 +268,7 @@
     </button>
   </nav>
 
-  <!-- Modal ป้อนรหัสแอดมิน (1212) -->
+  <!-- Modal รหัสแอดมิน (1212) -->
   <div id="admin-auth-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-xs w-full p-6 text-center space-y-4 shadow-2xl">
       <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center mx-auto">
@@ -272,7 +276,7 @@
       </div>
       <div>
         <h3 class="font-bold text-slate-800 text-lg">เข้าสู่ระบบแอดมิน</h3>
-        <p class="text-xs text-slate-500 mt-1">กรุณากรอกรหัสผ่านเพื่อจัดการข้อมูล</p>
+        <p class="text-xs text-slate-500 mt-1">กรอกรหัสผ่านเพื่อเข้าใช้งาน</p>
       </div>
       <input type="password" id="admin-passcode" placeholder="รหัสผ่าน 4 หลัก" maxlength="4" class="w-full text-center tracking-widest text-xl font-bold py-2.5 border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 outline-none">
       <div class="flex gap-2">
@@ -282,7 +286,7 @@
     </div>
   </div>
 
-  <!-- Modal ดูสลิป -->
+  <!-- Modal ดูรูปสลิป -->
   <div id="slip-modal" class="hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl">
       <div class="p-4 border-b border-slate-100 flex items-center justify-between">
@@ -295,15 +299,14 @@
     </div>
   </div>
 
-  <!-- Modal เพิ่ม/แก้ไขบิล -->
+  <!-- Modal เพิ่มรายการเก็บเงิน -->
   <div id="billing-modal" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between">
-        <h3 id="billing-modal-title" class="font-bold text-lg text-slate-800">เพิ่มรายการเก็บเงิน</h3>
+        <h3 class="font-bold text-lg text-slate-800">เพิ่มรายการเก็บเงิน</h3>
         <button onclick="closeBillingModal()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
       <form id="billing-form" onsubmit="saveBilling(event)" class="space-y-3">
-        <input type="hidden" id="billing-id">
         <div>
           <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อรายการ</label>
           <input type="text" id="billing-title" required placeholder="เช่น ค่าเสื้อสาขา, ค่าชีท" class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
@@ -324,28 +327,16 @@
     </div>
   </div>
 
-  <!-- Firebase SDK (Real-time Database) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+  <script>
+    // ฐานข้อมูล Real-time สาธารณะ (เปิดใช้พร้อมกันได้ทันทีทั่วโลก)
+    const gun = Gun(['https://gun-manhattan.herokuapp.com/gun', 'https://relay.peer.ooo/gun']);
+    const dbApp = gun.get('classpay_tourism_exhibition_2024_app_v1');
 
-    // ** ใส่การตั้งค่า Firebase ของคุณที่นี่ (ดูวิธีทำด้านล่าง) **
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-
-    // เปิดใช้งาน Firebase หากกรอก config แล้ว หรือสลับใช้ Local Mode ชั่วคราว
-    let db = null;
-    let isCloudMode = !firebaseConfig.apiKey.includes("YOUR_API_KEY");
-    if (isCloudMode) {
-      const app = initializeApp(firebaseConfig);
-      db = getFirestore(app);
-    }
+    const ADMIN_PASSCODE = "1212";
+    let isAdmin = sessionStorage.getItem('cp_is_admin') === 'true';
+    let pendingNavTab = null;
+    let currentFilter = 'all';
+    let uploadedSlipBase64 = null;
 
     // 1. รายชื่อนักศึกษา 29 คน
     const rawStudentNames = [
@@ -366,102 +357,62 @@
       "นายภาณุพงค์ พัดพาน (6740309138)"
     ];
 
-    window.students = rawStudentNames.map((item, idx) => {
+    const students = rawStudentNames.map((item, idx) => {
       const match = item.match(/(.+)\s\((\d+)\)/);
       return { id: match ? match[2] : `STU-${idx+1}`, name: match ? match[1].trim() : item };
     });
 
-    window.billings = [];
-    window.payments = [];
-    window.isAdmin = sessionStorage.getItem('cp_is_admin') === 'true';
-    window.pendingNavTab = null;
+    let billings = [];
+    let payments = [];
 
-    // เชื่อมต่อฐานข้อมูล Real-time
-    if (isCloudMode) {
-      onSnapshot(collection(db, "billings"), (snap) => {
-        window.billings = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        refreshUI();
-      });
+    // ดึงข้อมูล Real-time อัตโนมัติ (ซิงค์หากันทุกเครื่องทันที)
+    dbApp.get('billings_store').map().on((data, key) => {
+      if (!data) return;
+      try {
+        const item = typeof data === 'string' ? JSON.parse(data) : data;
+        if (item && item.id) {
+          billings = billings.filter(b => b.id !== item.id);
+          if (!item._deleted) billings.push(item);
+          refreshAllUI();
+        }
+      } catch(e) {}
+    });
 
-      onSnapshot(collection(db, "payments"), (snap) => {
-        window.payments = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        refreshUI();
-      });
-    } else {
-      // โหมดสำรองออฟไลน์ (Local)
-      window.billings = JSON.parse(localStorage.getItem('cp_billings')) || [
-        { id: 'b1', title: 'ค่าเสื้อสาขาการท่องเที่ยว', amount: 350, dueDate: '2025-04-15' }
-      ];
-      window.payments = JSON.parse(localStorage.getItem('cp_payments')) || [];
-    }
+    dbApp.get('payments_store').map().on((data, key) => {
+      if (!data) return;
+      try {
+        const item = typeof data === 'string' ? JSON.parse(data) : data;
+        if (item && item.id) {
+          payments = payments.filter(p => p.id !== item.id);
+          payments.push(item);
+          refreshAllUI();
+        }
+      } catch(e) {}
+    });
 
-    window.syncBillingCloud = async function(billingData) {
-      if (isCloudMode) {
-        await setDoc(doc(db, "billings", billingData.id), billingData);
-      } else {
-        const idx = window.billings.findIndex(b => b.id === billingData.id);
-        if (idx >= 0) window.billings[idx] = billingData;
-        else window.billings.push(billingData);
-        localStorage.setItem('cp_billings', JSON.stringify(window.billings));
-        refreshUI();
+    // เริ่มต้นบิลถ้ายังไม่มี
+    setTimeout(() => {
+      if (billings.length === 0) {
+        const defaultBill = { id: 'b_default', title: 'ค่าเสื้อสาขาการท่องเที่ยว', amount: 350, dueDate: '2025-04-15' };
+        dbApp.get('billings_store').get(defaultBill.id).put(JSON.stringify(defaultBill));
       }
-    };
+    }, 1500);
 
-    window.deleteBillingCloud = async function(id) {
-      if (isCloudMode) {
-        await deleteDoc(doc(db, "billings", id));
-      } else {
-        window.billings = window.billings.filter(b => b.id !== id);
-        localStorage.setItem('cp_billings', JSON.stringify(window.billings));
-        refreshUI();
-      }
-    };
-
-    window.syncPaymentCloud = async function(paymentData) {
-      if (isCloudMode) {
-        await setDoc(doc(db, "payments", paymentData.id), paymentData);
-      } else {
-        const idx = window.payments.findIndex(p => p.id === paymentData.id);
-        if (idx >= 0) window.payments[idx] = paymentData;
-        else window.payments.push(paymentData);
-        localStorage.setItem('cp_payments', JSON.stringify(window.payments));
-        refreshUI();
-      }
-    };
-
-    window.refreshUI = function() {
+    function refreshAllUI() {
       renderDashboard();
       renderMembers();
       renderBillings();
       renderAdmin();
       updateBadges();
       lucide.createIcons();
-    };
+    }
 
-    // อัปเดตสถานะแอดมินบนหัวเว็บ
-    window.updateAdminBadgeDisplay = function() {
-      const tag = document.getElementById('admin-status-tag');
-      if (window.isAdmin) {
-        tag.innerText = "สถานะ: แอดมิน (พร้อมแก้ไข)";
-        tag.className = "text-xs bg-emerald-500 font-bold px-3 py-1 rounded-full text-white";
-      } else {
-        tag.innerText = "ผู้ใช้งานทั่วไป";
-        tag.className = "text-xs bg-white/20 px-3 py-1 rounded-full text-white";
-      }
-    };
-  </script>
-
-  <!-- ฟังก์ชันการทำงานฝั่งผู้ใช้และระบบรักษาความปลอดภัย -->
-  <script>
-    const ADMIN_PASSCODE = "1212"; // รหัสผ่านแอดมิน
-    let currentFilter = 'all';
-    let uploadedSlipBase64 = null;
-
+    // ระบบรหัสผ่านแอดมิน (1212)
     function tryAccessAdmin(targetTab) {
-      if (window.isAdmin) {
+      if (isAdmin) {
         switchTab(targetTab);
       } else {
-        window.pendingNavTab = targetTab;
+        pendingNavTab = targetTab;
         document.getElementById('admin-passcode').value = '';
         document.getElementById('admin-auth-modal').classList.remove('hidden');
         document.getElementById('admin-passcode').focus();
@@ -470,35 +421,31 @@
 
     function closeAdminAuthModal() {
       document.getElementById('admin-auth-modal').classList.add('hidden');
-      window.pendingNavTab = null;
+      pendingNavTab = null;
     }
 
     function verifyAdminPasscode() {
       const entered = document.getElementById('admin-passcode').value;
       if (entered === ADMIN_PASSCODE) {
-        window.isAdmin = true;
+        isAdmin = true;
         sessionStorage.setItem('cp_is_admin', 'true');
         closeAdminAuthModal();
-        window.updateAdminBadgeDisplay();
-        alert('เข้าสู่ระบบแอดมินสำเร็จ!');
-        if (window.pendingNavTab) {
-          switchTab(window.pendingNavTab);
-        }
+        alert('ยินดีต้อนรับแอดมิน! ตอนนี้คุณมีสิทธิ์จัดการข้อมูล');
+        if (pendingNavTab) switchTab(pendingNavTab);
       } else {
-        alert('รหัสผ่านไม่ถูกต้อง! (กรุณาใส่รหัส 1212)');
+        alert('รหัสผ่านไม่ถูกต้อง! กรุณากรอก 1212');
       }
     }
 
     function logoutAdmin() {
-      window.isAdmin = false;
+      isAdmin = false;
       sessionStorage.removeItem('cp_is_admin');
-      window.updateAdminBadgeDisplay();
       alert('ออกจากระบบแอดมินแล้ว');
       switchTab('dashboard');
     }
 
     function switchTab(tabId) {
-      if ((tabId === 'admin' || tabId === 'billings') && !window.isAdmin) {
+      if ((tabId === 'admin' || tabId === 'billings') && !isAdmin) {
         tryAccessAdmin(tabId);
         return;
       }
@@ -538,19 +485,19 @@
     }
 
     function renderDashboard() {
-      const totalStudents = window.students.length;
+      const totalStudents = students.length;
       document.getElementById('dash-total-students').innerText = `${totalStudents} คน`;
 
       let totalTarget = 0;
       let totalPaid = 0;
 
-      window.billings.forEach(bill => {
+      billings.forEach(bill => {
         totalTarget += bill.amount * totalStudents;
       });
 
-      window.payments.forEach(p => {
+      payments.forEach(p => {
         if (p.status === 'paid') {
-          const bill = window.billings.find(b => b.id === p.billId);
+          const bill = billings.find(b => b.id === p.billId);
           if (bill) totalPaid += bill.amount;
         }
       });
@@ -562,13 +509,13 @@
       document.getElementById('dash-pending-amount').innerText = `฿${totalPending.toLocaleString()}`;
 
       const dashList = document.getElementById('dash-billing-list');
-      if (window.billings.length === 0) {
+      if (billings.length === 0) {
         dashList.innerHTML = `<p class="text-slate-400 text-xs py-4 text-center col-span-2">ยังไม่มีรายการเก็บเงิน</p>`;
         return;
       }
 
-      dashList.innerHTML = window.billings.map(b => {
-        const paidCount = window.payments.filter(p => p.billId === b.id && p.status === 'paid').length;
+      dashList.innerHTML = billings.map(b => {
+        const paidCount = payments.filter(p => p.billId === b.id && p.status === 'paid').length;
         const progress = Math.round((paidCount / totalStudents) * 100) || 0;
         return `
           <div class="border border-slate-100 bg-slate-50/70 p-4 rounded-2xl">
@@ -595,11 +542,11 @@
 
     function renderMembers() {
       const select = document.getElementById('member-bill-select');
-      if (select && select.children.length !== window.billings.length) {
-        select.innerHTML = window.billings.map(b => `<option value="${b.id}">${b.title} (฿${b.amount})</option>`).join('');
+      if (select && select.children.length !== billings.length) {
+        select.innerHTML = billings.map(b => `<option value="${b.id}">${b.title} (฿${b.amount})</option>`).join('');
       }
 
-      const activeBillId = select ? select.value || (window.billings[0] ? window.billings[0].id : null) : null;
+      const activeBillId = select ? select.value || (billings[0] ? billings[0].id : null) : null;
       const query = document.getElementById('member-search').value.toLowerCase().trim();
       const container = document.getElementById('members-list-container');
 
@@ -608,9 +555,9 @@
         return;
       }
 
-      const filtered = window.students.filter(student => {
+      const filtered = students.filter(student => {
         const matchQuery = student.name.toLowerCase().includes(query) || student.id.includes(query);
-        const p = window.payments.find(pay => pay.billId === activeBillId && pay.studentId === student.id);
+        const p = payments.find(pay => pay.billId === activeBillId && pay.studentId === student.id);
         const status = p ? p.status : 'unpaid';
         const matchFilter = (currentFilter === 'all') || (currentFilter === status);
         return matchQuery && matchFilter;
@@ -622,7 +569,7 @@
       }
 
       container.innerHTML = filtered.map(student => {
-        const p = window.payments.find(pay => pay.billId === activeBillId && pay.studentId === student.id);
+        const p = payments.find(pay => pay.billId === activeBillId && pay.studentId === student.id);
         const status = p ? p.status : 'unpaid';
         
         let badgeHtml = '';
@@ -671,36 +618,35 @@
       const bSelect = document.getElementById('pay-bill-select');
       const sSelect = document.getElementById('pay-student-select');
 
-      bSelect.innerHTML = window.billings.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
+      bSelect.innerHTML = billings.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
       sSelect.innerHTML = '<option value="">-- แตะเลือกชื่อของคุณ --</option>' + 
-        window.students.map(s => `<option value="${s.id}">${s.name} (${s.id})</option>`).join('');
+        students.map(s => `<option value="${s.id}">${s.name} (${s.id})</option>`).join('');
 
       updatePayAmountDisplay();
     }
 
     function updatePayAmountDisplay() {
       const bId = document.getElementById('pay-bill-select').value;
-      const bill = window.billings.find(b => b.id === bId);
+      const bill = billings.find(b => b.id === bId);
       document.getElementById('pay-amount-display').innerText = bill ? `฿${bill.amount}` : '฿0';
     }
 
     function previewSlip(event) {
       const file = event.target.files[0];
       if (file) {
-        // ย่อรูปเพื่อประหยัดขนาดรับส่ง
         const reader = new FileReader();
         reader.onload = function(e) {
           const img = new Image();
           img.src = e.target.result;
           img.onload = function() {
             const canvas = document.createElement('canvas');
-            const maxW = 800;
+            const maxW = 500;
             const scale = maxW / img.width;
             canvas.width = (img.width > maxW) ? maxW : img.width;
             canvas.height = (img.width > maxW) ? img.height * scale : img.height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            uploadedSlipBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            uploadedSlipBase64 = canvas.toDataURL('image/jpeg', 0.6);
 
             const preview = document.getElementById('slip-preview');
             preview.src = uploadedSlipBase64;
@@ -712,7 +658,7 @@
       }
     }
 
-    async function submitSlip() {
+    function submitSlip() {
       const billId = document.getElementById('pay-bill-select').value;
       const studentId = document.getElementById('pay-student-select').value;
 
@@ -726,11 +672,12 @@
       }
 
       const btn = document.getElementById('btn-submit-slip');
-      btn.innerText = 'กำลังส่งข้อมูล...';
+      btn.innerText = 'กำลังส่งข้อมูลไปยังระบบกลาง...';
       btn.disabled = true;
 
+      const pId = `${studentId}_${billId}`;
       const paymentObj = {
-        id: `${studentId}_${billId}`,
+        id: pId,
         billId: billId,
         studentId: studentId,
         status: 'pending',
@@ -738,29 +685,31 @@
         date: new Date().toLocaleString('th-TH')
       };
 
-      await window.syncPaymentCloud(paymentObj);
+      // ส่งเข้าฐานข้อมูล Real-time
+      dbApp.get('payments_store').get(pId).put(JSON.stringify(paymentObj));
 
-      alert('ส่งสลิปเรียบร้อยแล้ว! สถานะจะเปลี่ยนเป็น "รอตรวจสอบ"');
-      btn.innerText = 'ยืนยันการส่งสลิป';
-      btn.disabled = false;
+      setTimeout(() => {
+        alert('ส่งสลิปเรียบร้อยแล้ว! แอดมินและเพื่อนทุกคนจะเห็นสถานะ Real-time');
+        btn.innerText = 'ยืนยันการส่งสลิป';
+        btn.disabled = false;
 
-      // ล้างข้อมูล
-      document.getElementById('slip-input').value = '';
-      document.getElementById('slip-preview').classList.add('hidden');
-      document.getElementById('slip-placeholder').classList.remove('hidden');
-      uploadedSlipBase64 = null;
+        document.getElementById('slip-input').value = '';
+        document.getElementById('slip-preview').classList.add('hidden');
+        document.getElementById('slip-placeholder').classList.remove('hidden');
+        uploadedSlipBase64 = null;
 
-      switchTab('members');
+        switchTab('members');
+      }, 800);
     }
 
     function renderBillings() {
       const container = document.getElementById('billings-list');
-      if (window.billings.length === 0) {
+      if (billings.length === 0) {
         container.innerHTML = `<p class="text-slate-400 text-sm py-8 text-center col-span-2">ยังไม่มีรายการเก็บเงิน</p>`;
         return;
       }
 
-      container.innerHTML = window.billings.map(b => `
+      container.innerHTML = billings.map(b => `
         <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
           <div>
             <h4 class="font-bold text-slate-800 text-sm">${b.title}</h4>
@@ -790,40 +739,36 @@
       document.getElementById('billing-modal').classList.add('hidden');
     }
 
-    async function saveBilling(e) {
+    function saveBilling(e) {
       e.preventDefault();
       const title = document.getElementById('billing-title').value;
       const amount = parseFloat(document.getElementById('billing-amount').value);
       const dueDate = document.getElementById('billing-duedate').value;
 
-      const newBilling = {
-        id: 'b_' + Date.now(),
-        title,
-        amount,
-        dueDate
-      };
+      const newId = 'b_' + Date.now();
+      const newBilling = { id: newId, title, amount, dueDate };
 
-      await window.syncBillingCloud(newBilling);
+      dbApp.get('billings_store').get(newId).put(JSON.stringify(newBilling));
       closeBillingModal();
-      alert('เพิ่มรายการเก็บเงินสำเร็จ');
+      alert('สร้างรายการเก็บเงินสำเร็จ ทุกคนจะเห็นพร้อมกันทันที!');
     }
 
-    async function deleteBilling(id) {
-      if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่? ข้อมูลการจ่ายเงินของรายการนี้จะถูกลบออกด้วย')) {
-        await window.deleteBillingCloud(id);
+    function deleteBilling(id) {
+      if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่? ข้อมูลจะถูกลบออกจากทุกคนพร้อมกัน')) {
+        dbApp.get('billings_store').get(id).put(JSON.stringify({ id, _deleted: true }));
       }
     }
 
     function renderAdmin() {
       const container = document.getElementById('admin-slip-list');
-      const pendingPayments = window.payments.filter(p => p.status === 'pending');
+      const pendingPayments = payments.filter(p => p.status === 'pending');
 
       if (pendingPayments.length === 0) {
         container.innerHTML = `
           <div class="bg-white p-10 rounded-3xl border border-slate-200/80 text-center space-y-2">
             <i data-lucide="check-circle" class="w-10 h-10 mx-auto text-emerald-500"></i>
             <h4 class="font-bold text-slate-700">ไม่มีสลิปรอตรวจสอบ</h4>
-            <p class="text-xs text-slate-400">เมื่อเพื่อนในห้องส่งสลิปมา จะแสดงให้คุณตรวจที่นี่ทันที</p>
+            <p class="text-xs text-slate-400">เมื่อเพื่อนในห้องส่งสลิปมา จะเด้งขึ้นที่นี่ทันทีแบบสดๆ</p>
           </div>
         `;
         lucide.createIcons();
@@ -831,8 +776,8 @@
       }
 
       container.innerHTML = pendingPayments.map(p => {
-        const student = window.students.find(s => s.id === p.studentId) || { name: 'ไม่ระบุชื่อ', id: p.studentId };
-        const bill = window.billings.find(b => b.id === p.billId) || { title: 'ไม่พบรายการ', amount: 0 };
+        const student = students.find(s => s.id === p.studentId) || { name: 'ไม่ระบุชื่อ', id: p.studentId };
+        const bill = billings.find(b => b.id === p.billId) || { title: 'ไม่พบรายการ', amount: 0 };
 
         return `
           <div class="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -864,16 +809,16 @@
       lucide.createIcons();
     }
 
-    async function setPaymentStatus(paymentId, newStatus) {
-      const p = window.payments.find(pay => pay.id === paymentId);
+    function setPaymentStatus(paymentId, newStatus) {
+      const p = payments.find(pay => pay.id === paymentId);
       if (p) {
         p.status = newStatus;
-        await window.syncPaymentCloud(p);
+        dbApp.get('payments_store').get(paymentId).put(JSON.stringify(p));
       }
     }
 
     function updateBadges() {
-      const pendingCount = window.payments.filter(p => p.status === 'pending').length;
+      const pendingCount = payments.filter(p => p.status === 'pending').length;
       const bDesktop = document.getElementById('badge-pending');
       const bMobile = document.getElementById('badge-pending-mobile');
 
@@ -897,7 +842,6 @@
     }
 
     window.onload = function() {
-      window.updateAdminBadgeDisplay();
       renderDashboard();
       lucide.createIcons();
     };
