@@ -303,3 +303,515 @@
           <input type="date" id="billing-duedate" required class="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-brand-500 outline-none">
         </div>
         <div class="pt-2 flex gap-2">
+          <button type="button" onclick="closeBillingModal()" class="w-1/2 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50">ยกเลิก</button>
+          <button type="submit" class="w-1/2 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-sm font-medium transition">บันทึก</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // ฐานข้อมูลออนไลน์กลาง (Cloud Database)
+    const CLOUD_STORAGE_KEY = "cp_cloud_v3_tourism";
+    const CLOUD_ENDPOINT = "https://jsonblob.com/api/jsonBlob/1222450892015386624"; // Cloud API ฟรีพร้อมใช้
+
+    const ADMIN_PASSCODE = "1212";
+    let isAdmin = sessionStorage.getItem('cp_is_admin') === 'true';
+    let currentFilter = 'all';
+    let uploadedSlipBase64 = null;
+
+    // 1. รายชื่อนักศึกษา 29 คน
+    const rawStudentNames = [
+      "นางสาวกมัยธร มีเดช (6740309101)", "นางสาวกันยกร เคนพรม (6740309103)",
+      "นางสาวขนิษฐา กลิ่นศรีสุข (6740309105)", "นางสาวเจสสิก้า ไฮตัน (6740309106)",
+      "นางสาวชริดา พุทธาศรี (6740309107)", "นางสาวชลิตา อินนอก (6740309109)",
+      "นางสาวนิราณี กระฉอดนอก (6740309110)", "นางสาวเนตรนภา สถานถิ่น (6740309111)",
+      "นางสาวปิยฉัตร สาตะสิน (6740309112)", "นางสาวมนัสนันท์ เชือกงูเหลือม (6740309113)",
+      "นางสาวศิรประภา เกิดศักดิ์ ณ แวงน้อย (6740309115)", "นางสาวสกเม็ย เฮง (6740309117)",
+      "นางสาวสกุลกาญจน์ วรตาฤดี (6740309118)", "นางสาวสุจิตรา ถานะปัดโถ (6740309119)",
+      "นางสาวสุทธิดา ไชยบุรี (6740309120)", "นางสาวอัจฉราพรรณ ช้อยกิ่ง (6740309122)",
+      "นางสาวอารียา จำปาโพธิ์ (6740309123)", "นายชญานนท์ ยิ้มไทร (6740309124)",
+      "นายณัฐพงศ์ ปุรา (6740309127)", "นายธัชพงศ์ บุญเกิด (6740309128)",
+      "นายพฤทธิพร สังข์วิลัย (6740309129)", "นายศุภกร เกษรแก้ว (6740309130)",
+      "นางสาวกติกา ภักดี (6740309131)", "นางสาวลลิตตา การทหาร (6740309132)",
+      "นางสาวนิภาสิริ ปัจจัยยา (6740309133)", "นางสาวพัฒนาวดี สุวรรณปักษ์ (6740309134)",
+      "นายชัยธวัช เจนชัย (6740309136)", "นายฐกร ฐิติธีวรากุล (6740309137)",
+      "นายภาณุพงค์ พัดพาน (6740309138)"
+    ];
+
+    const students = rawStudentNames.map((item, idx) => {
+      const match = item.match(/(.+)\s\((\d+)\)/);
+      return { id: match ? match[2] : `STU-${idx+1}`, name: match ? match[1].trim() : item };
+    });
+
+    let billings = [
+      { id: 'b1', title: 'ค่าเสื้อสาขาการท่องเที่ยว', amount: 350, dueDate: '2025-04-15' }
+    ];
+    let payments = [];
+
+    // ดึงข้อมูลออนไลน์จาก Cloud
+    async function loadCloudData() {
+      try {
+        const res = await fetch(CLOUD_ENDPOINT);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.billings) billings = data.billings;
+          if (data.payments) payments = data.payments;
+          document.getElementById('sync-status').innerText = 'ข้อมูลอัปเดตออนไลน์แล้ว';
+        }
+      } catch (e) {
+        console.log("Offline mode");
+      }
+      refreshUI();
+    }
+
+    // ซิงค์ข้อมูลขึ้น Cloud
+    async function syncToCloud() {
+      try {
+        await fetch(CLOUD_ENDPOINT, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ billings, payments })
+        });
+      } catch(e) {}
+    }
+
+    function refreshUI() {
+      renderDashboard();
+      renderMembers();
+      renderBillings();
+      renderAdmin();
+      updateBadges();
+      lucide.createIcons();
+    }
+
+    // รหัสผ่านแอดมิน (1212)
+    function tryAdminAccess(tab) {
+      if (isAdmin) {
+        switchTab(tab);
+      } else {
+        document.getElementById('admin-passcode').value = '';
+        document.getElementById('admin-auth-modal').classList.remove('hidden');
+        document.getElementById('admin-passcode').focus();
+      }
+    }
+
+    function closeAdminAuthModal() {
+      document.getElementById('admin-auth-modal').classList.add('hidden');
+    }
+
+    function verifyAdminPasscode() {
+      if (document.getElementById('admin-passcode').value === ADMIN_PASSCODE) {
+        isAdmin = true;
+        sessionStorage.setItem('cp_is_admin', 'true');
+        closeAdminAuthModal();
+        alert('เข้าสู่ระบบแอดมินสำเร็จ!');
+        switchTab('admin');
+      } else {
+        alert('รหัสผ่านไม่ถูกต้อง! กรุณากรอก 1212');
+      }
+    }
+
+    function logoutAdmin() {
+      isAdmin = false;
+      sessionStorage.removeItem('cp_is_admin');
+      alert('ออกจากระบบแอดมินแล้ว');
+      switchTab('dashboard');
+    }
+
+    function switchTab(tabId) {
+      if (tabId === 'admin' && !isAdmin) {
+        tryAdminAccess('admin');
+        return;
+      }
+
+      ['dashboard', 'members', 'pay', 'admin'].forEach(tab => {
+        document.getElementById(`tab-${tab}`).classList.add('hidden');
+      });
+      document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+      document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(btn => {
+        if(btn.dataset.tab === tabId) {
+          btn.classList.add('text-brand-600');
+        } else {
+          btn.classList.remove('text-brand-600');
+        }
+      });
+
+      if(tabId === 'dashboard') renderDashboard();
+      if(tabId === 'members') renderMembers();
+      if(tabId === 'pay') populatePayForm();
+      if(tabId === 'admin') renderAdmin();
+
+      lucide.createIcons();
+    }
+
+    function renderDashboard() {
+      const totalStudents = students.length;
+      document.getElementById('dash-total-students').innerText = `${totalStudents} คน`;
+
+      let totalTarget = 0;
+      let totalPaid = 0;
+
+      billings.forEach(bill => {
+        totalTarget += bill.amount * totalStudents;
+      });
+
+      payments.forEach(p => {
+        if (p.status === 'paid') {
+          const bill = billings.find(b => b.id === p.billId);
+          if (bill) totalPaid += bill.amount;
+        }
+      });
+
+      const totalPending = Math.max(0, totalTarget - totalPaid);
+
+      document.getElementById('dash-target-amount').innerText = `฿${totalTarget.toLocaleString()}`;
+      document.getElementById('dash-paid-amount').innerText = `฿${totalPaid.toLocaleString()}`;
+      document.getElementById('dash-pending-amount').innerText = `฿${totalPending.toLocaleString()}`;
+
+      const dashList = document.getElementById('dash-billing-list');
+      if (billings.length === 0) {
+        dashList.innerHTML = `<p class="text-slate-400 text-xs py-4 text-center col-span-2">ยังไม่มีรายการเก็บเงิน</p>`;
+        return;
+      }
+
+      dashList.innerHTML = billings.map(b => {
+        const paidCount = payments.filter(p => p.billId === b.id && p.status === 'paid').length;
+        const progress = Math.round((paidCount / totalStudents) * 100) || 0;
+        return `
+          <div class="border border-slate-100 bg-slate-50/70 p-4 rounded-2xl">
+            <div class="flex justify-between items-start">
+              <div>
+                <h4 class="font-bold text-slate-800 text-sm">${b.title}</h4>
+                <p class="text-[11px] text-slate-400 mt-0.5">ครบกำหนด: ${b.dueDate}</p>
+              </div>
+              <span class="text-xs font-bold text-brand-700 bg-brand-100/70 px-2.5 py-1 rounded-lg">฿${b.amount}</span>
+            </div>
+            <div class="mt-4">
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-slate-500">ชำระแล้ว ${paidCount}/${totalStudents} คน</span>
+                <span class="font-semibold text-brand-700">${progress}%</span>
+              </div>
+              <div class="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                <div class="bg-brand-600 h-full rounded-full transition-all duration-300" style="width: ${progress}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderMembers() {
+      const select = document.getElementById('member-bill-select');
+      if (select && select.children.length !== billings.length) {
+        select.innerHTML = billings.map(b => `<option value="${b.id}">${b.title} (฿${b.amount})</option>`).join('');
+      }
+
+      const activeBillId = select ? select.value || (billings[0] ? billings[0].id : null) : null;
+      const query = document.getElementById('member-search').value.toLowerCase().trim();
+      const container = document.getElementById('members-list-container');
+
+      if (!activeBillId) {
+        container.innerHTML = `<p class="text-center text-slate-400 py-8 col-span-2 text-sm">ยังไม่มีรายการเก็บเงิน</p>`;
+        return;
+      }
+
+      const filtered = students.filter(student => {
+        const matchQuery = student.name.toLowerCase().includes(query) || student.id.includes(query);
+        const p = payments.find(pay => pay.billId === activeBillId && pay.studentId === student.id);
+        const status = p ? p.status : 'unpaid';
+        const matchFilter = (currentFilter === 'all') || (currentFilter === status);
+        return matchQuery && matchFilter;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-center text-slate-400 py-8 col-span-2 text-sm">ไม่พบข้อมูลตามเงื่อนไข</p>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(student => {
+        const p = payments.find(pay => pay.billId === activeBillId && pay.studentId === student.id);
+        const status = p ? p.status : 'unpaid';
+        
+        let badgeHtml = '';
+        if (status === 'paid') {
+          badgeHtml = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-100 text-emerald-700 flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> จ่ายแล้ว</span>`;
+        } else if (status === 'pending') {
+          badgeHtml = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-100 text-amber-700 flex items-center gap-1"><i data-lucide="clock" class="w-3.5 h-3.5"></i> รอตรวจสอบ</span>`;
+        } else if (status === 'rejected') {
+          badgeHtml = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-100 text-rose-700 flex items-center gap-1"><i data-lucide="alert-circle" class="w-3.5 h-3.5"></i> ถูกปฏิเสธ</span>`;
+        } else {
+          badgeHtml = `<span class="px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-500">ยังไม่จ่าย</span>`;
+        }
+
+        return `
+          <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl bg-brand-50 text-brand-700 flex items-center justify-center font-bold text-sm">
+                ${student.name.charAt(0)}
+              </div>
+              <div>
+                <h4 class="font-medium text-slate-800 text-sm leading-snug">${student.name}</h4>
+                <p class="text-xs text-slate-400 font-mono mt-0.5">รหัส: ${student.id}</p>
+              </div>
+            </div>
+            <div>${badgeHtml}</div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    function setFilter(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        if(btn.dataset.filter === filter) {
+          btn.className = "filter-btn active px-3.5 py-1.5 rounded-full text-xs font-medium bg-brand-600 text-white";
+        } else {
+          btn.className = "filter-btn px-3.5 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600";
+        }
+      });
+      renderMembers();
+    }
+
+    function populatePayForm() {
+      const bSelect = document.getElementById('pay-bill-select');
+      const sSelect = document.getElementById('pay-student-select');
+
+      bSelect.innerHTML = billings.map(b => `<option value="${b.id}">${b.title}</option>`).join('');
+      sSelect.innerHTML = '<option value="">-- แตะเลือกชื่อของคุณ --</option>' + 
+        students.map(s => `<option value="${s.id}">${s.name} (${s.id})</option>`).join('');
+
+      updatePayAmountDisplay();
+    }
+
+    function updatePayAmountDisplay() {
+      const bId = document.getElementById('pay-bill-select').value;
+      const bill = billings.find(b => b.id === bId);
+      document.getElementById('pay-amount-display').innerText = bill ? `฿${bill.amount}` : '฿0';
+    }
+
+    function previewSlip(event) {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = new Image();
+          img.src = e.target.result;
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const maxW = 400; // บีบอัดภาพเพื่อส่งผ่านอินเทอร์เน็ตได้เร็ว
+            const scale = maxW / img.width;
+            canvas.width = (img.width > maxW) ? maxW : img.width;
+            canvas.height = (img.width > maxW) ? img.height * scale : img.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            uploadedSlipBase64 = canvas.toDataURL('image/jpeg', 0.5);
+
+            const preview = document.getElementById('slip-preview');
+            preview.src = uploadedSlipBase64;
+            preview.classList.remove('hidden');
+            document.getElementById('slip-placeholder').classList.add('hidden');
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    async function submitSlip() {
+      const billId = document.getElementById('pay-bill-select').value;
+      const studentId = document.getElementById('pay-student-select').value;
+
+      if (!studentId) {
+        alert('กรุณาเลือกชื่อของคุณ');
+        return;
+      }
+      if (!uploadedSlipBase64) {
+        alert('กรุณาแนบรูปภาพสลิปโอนเงิน');
+        return;
+      }
+
+      const btn = document.getElementById('btn-submit-slip');
+      btn.innerText = 'กำลังส่งข้อมูล...';
+      btn.disabled = true;
+
+      const pId = `${studentId}_${billId}`;
+      const paymentObj = {
+        id: pId,
+        billId: billId,
+        studentId: studentId,
+        status: 'pending',
+        slipUrl: uploadedSlipBase64,
+        date: new Date().toLocaleString('th-TH')
+      };
+
+      payments = payments.filter(p => p.id !== pId);
+      payments.push(paymentObj);
+
+      await syncToCloud(); // บันทึกออนไลน์
+
+      alert('ส่งสลิปเรียบร้อยแล้ว! แอดมินสามารถตรวจสลิปของคุณได้ทันที');
+      btn.innerText = 'ยืนยันการส่งสลิป';
+      btn.disabled = false;
+
+      document.getElementById('slip-input').value = '';
+      document.getElementById('slip-preview').classList.add('hidden');
+      document.getElementById('slip-placeholder').classList.remove('hidden');
+      uploadedSlipBase64 = null;
+
+      switchTab('members');
+    }
+
+    function renderBillings() {
+      const container = document.getElementById('billings-list');
+      if (billings.length === 0) {
+        container.innerHTML = `<p class="text-slate-400 text-sm py-8 text-center col-span-2">ยังไม่มีรายการเก็บเงิน</p>`;
+        return;
+      }
+
+      container.innerHTML = billings.map(b => `
+        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">${b.title}</h4>
+            <div class="flex items-center gap-3 text-xs text-slate-400 mt-1">
+              <span>฿${b.amount} / คน</span>
+              <span>•</span>
+              <span>ครบกำหนด: ${b.dueDate}</span>
+            </div>
+          </div>
+          <button onclick="deleteBilling('${b.id}')" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+
+      lucide.createIcons();
+    }
+
+    function openBillingModal() {
+      document.getElementById('billing-modal').classList.remove('hidden');
+      document.getElementById('billing-form').reset();
+    }
+
+    function closeBillingModal() {
+      document.getElementById('billing-modal').classList.add('hidden');
+    }
+
+    async function saveBilling(e) {
+      e.preventDefault();
+      const title = document.getElementById('billing-title').value;
+      const amount = parseFloat(document.getElementById('billing-amount').value);
+      const dueDate = document.getElementById('billing-duedate').value;
+
+      const newBilling = { id: 'b_' + Date.now(), title, amount, dueDate };
+      billings.push(newBilling);
+
+      await syncToCloud(); // อัปเดตออนไลน์
+
+      closeBillingModal();
+      refreshUI();
+      alert('สร้างรายการเก็บเงินสำเร็จ ทุกคนจะเห็นพร้อมกัน!');
+    }
+
+    async function deleteBilling(id) {
+      if (confirm('คุณต้องการลบรายการนี้ใช่หรือไม่?')) {
+        billings = billings.filter(b => b.id !== id);
+        payments = payments.filter(p => p.billId !== id);
+        await syncToCloud();
+        refreshUI();
+      }
+    }
+
+    function renderAdmin() {
+      const container = document.getElementById('admin-slip-list');
+      const pendingPayments = payments.filter(p => p.status === 'pending');
+
+      if (pendingPayments.length === 0) {
+        container.innerHTML = `
+          <div class="bg-white p-8 rounded-3xl border border-slate-200 text-center space-y-1">
+            <i data-lucide="check-circle" class="w-8 h-8 mx-auto text-emerald-500"></i>
+            <h4 class="font-bold text-slate-700 text-sm">ไม่มีสลิปรอตรวจสอบ</h4>
+            <p class="text-xs text-slate-400">ยังไม่มีเพื่อนในห้องส่งสลิปเข้ามาใหม่</p>
+          </div>
+        `;
+        lucide.createIcons();
+        return;
+      }
+
+      container.innerHTML = pendingPayments.map(p => {
+        const student = students.find(s => s.id === p.studentId) || { name: 'ไม่ระบุชื่อ', id: p.studentId };
+        const bill = billings.find(b => b.id === p.billId) || { title: 'ไม่พบรายการ', amount: 0 };
+
+        return `
+          <div class="bg-white p-4 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex items-start gap-3">
+              <img src="${p.slipUrl}" onclick="openSlipModal('${p.slipUrl}')" class="w-16 h-20 object-cover rounded-xl border border-slate-200 cursor-pointer hover:opacity-80 transition" alt="สลิป">
+              <div>
+                <span class="text-[10px] font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded-full">${bill.title} (฿${bill.amount})</span>
+                <h4 class="font-bold text-slate-800 text-sm mt-1">${student.name}</h4>
+                <p class="text-xs text-slate-400 font-mono">รหัส: ${student.id}</p>
+                <p class="text-[11px] text-slate-400 mt-1">เวลาส่ง: ${p.date}</p>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-2 border-t md:border-t-0 pt-3 md:pt-0">
+              <button onclick="openSlipModal('${p.slipUrl}')" class="flex-1 md:flex-none px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i> สลิปเต็ม
+              </button>
+              <button onclick="setPaymentStatus('${p.id}', 'rejected')" class="flex-1 md:flex-none px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl text-xs font-medium transition flex items-center justify-center gap-1">
+                <i data-lucide="x" class="w-3.5 h-3.5"></i> ปฏิเสธ
+              </button>
+              <button onclick="setPaymentStatus('${p.id}', 'paid')" class="flex-1 md:flex-none px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-medium transition flex items-center justify-center gap-1 shadow-sm">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i> ยืนยันยอด
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+    }
+
+    async function setPaymentStatus(paymentId, newStatus) {
+      const p = payments.find(pay => pay.id === paymentId);
+      if (p) {
+        p.status = newStatus;
+        await syncToCloud(); // อัปเดตออนไลน์ทันที
+        refreshUI();
+      }
+    }
+
+    function updateBadges() {
+      const pendingCount = payments.filter(p => p.status === 'pending').length;
+      const bDesktop = document.getElementById('badge-pending');
+      const bMobile = document.getElementById('badge-pending-mobile');
+
+      if (pendingCount > 0) {
+        bDesktop.innerText = pendingCount;
+        bDesktop.classList.remove('hidden');
+        bMobile.classList.remove('hidden');
+      } else {
+        bDesktop.classList.add('hidden');
+        bMobile.classList.add('hidden');
+      }
+    }
+
+    function openSlipModal(url) {
+      document.getElementById('modal-slip-img').src = url;
+      document.getElementById('slip-modal').classList.remove('hidden');
+    }
+
+    function closeSlipModal() {
+      document.getElementById('slip-modal').classList.add('hidden');
+    }
+
+    window.onload = function() {
+      loadCloudData();
+      // ดึงข้อมูลอัปเดตใหม่อัตโนมัติทุกๆ 6 วินาที
+      setInterval(loadCloudData, 6000);
+    };
+  </script>
+</body>
+</html>
